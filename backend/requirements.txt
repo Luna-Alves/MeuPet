@@ -3,3 +3,4 @@ flask-cors
 flask-sqlalchemy
 marshmallow
 marshmallow-sqlalchemy
+dnspython==2.6.1

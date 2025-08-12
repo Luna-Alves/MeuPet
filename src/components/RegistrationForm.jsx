@@ -1,22 +1,64 @@
 import React from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import axios from "axios";
+import api from "../services/api";
+
+const onlyLetters = /^[\p{L}\s]+$/u;
+const today = new Date();
+const todayStr = new Date().toISOString().split("T")[0];
 
 const validationSchema = Yup.object({
-  nome: Yup.string().required("Obrigatório"),
-  data: Yup.date().required("Obrigatório"),
-  rua: Yup.string().required("Obrigatório"),
-  bairro: Yup.string().required("Obrigatório"),
-  numero: Yup.string().required("Obrigatório"),
-  cep: Yup.string().required("Obrigatório"),
-  cidade: Yup.string().required("Obrigatório"),
-  estado: Yup.string().required("Obrigatório"),
+  nome: Yup.string()
+    .trim()
+    .matches(onlyLetters, "Use apenas letras e espaços")
+    .required("Campo obrigatório"),
+
+  data: Yup.date()
+    .max(today, "Não pode ser no futuro")
+    .required("Campo obrigatório"),
+
+  rua: Yup.string()
+    .trim()
+    .matches(onlyLetters, "Use apenas letras e espaços")
+    .required("Campo obrigatório"),
+
+  bairro: Yup.string()
+    .trim()
+    .matches(onlyLetters, "Use apenas letras e espaços")
+    .required("Campo obrigatório"),
+
+  cidade: Yup.string()
+    .trim()
+    .matches(onlyLetters, "Use apenas letras e espaços")
+    .required("Campo obrigatório"),
+
+  estado: Yup.string()
+    .trim()
+    .matches(/^[A-Za-z]{2}$/, "Use a sigla de 2 letras (ex.: SP)")
+    .required("Campo obrigatório"),
+
+  numero: Yup.string()
+    .matches(/^\d+$/, "Apenas números")
+    .required("Campo obrigatório"),
+  cep: Yup.string()
+    .matches(/^\d{5}-?\d{3}$/, "CEP inválido (use 00000-000)")
+    .required("Campo obrigatório"),
   complemento: Yup.string(),
-  funcao: Yup.string().oneOf(["tutor", "ong"]).required("Obrigatório"),
-  email: Yup.string().email("Email inválido").required("Obrigatório"),
-  senha: Yup.string().min(6, "Mínimo de 6 caracteres").required("Obrigatório"),
+  funcao: Yup.string()
+    .transform((v) => (v ? v.toLowerCase() : v))
+    .oneOf(["tutor", "ong"], "Selecione uma função válida")
+    .required("Campo obrigatório"),
+  email: Yup.string().email("Email inválido").required("Campo obrigatório"),
+  senha: Yup.string()
+    .min(6, "Mínimo de 6 caracteres")
+    .required("Campo obrigatório"),
 });
+
+const formatCEP = (value) => {
+  const digits = (value || "").replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
 
 export default function RegistrationForm() {
   return (
@@ -36,33 +78,68 @@ export default function RegistrationForm() {
         senha: "",
       }}
       validationSchema={validationSchema}
-      onSubmit={async (values, { setSubmitting, resetForm }) => {
+      onSubmit={async (
+        values,
+        { setSubmitting, resetForm, setFieldError, setStatus }
+      ) => {
         try {
-          const resp = await axios.post("/api/usuario", values);
-          const id = resp?.data?.id;
-          alert("Cadastro realizado com sucesso!");
+          setStatus(undefined);
+          values.estado = (values.estado || "").trim().toUpperCase();
+          values.cep = (values.cep || "").replace(/\D/g, "");
+          values.numero = (values.numero || "").replace(/\D/g, "");
+          values.funcao = (values.funcao || "").toLowerCase();
+          values.email = (values.email || "").trim().toLowerCase();
+
+          const resp = await api.post("/usuario", values); // baseURL '/api'
+          const { id, token } = resp.data;
+          // guarda sessão
+          localStorage.setItem("token", token);
+          localStorage.setItem("userId", id);
+          // feedback e redireciona
+          alert("Responsável cadastrado com sucesso!");
           resetForm();
-          if (id) {
-            localStorage.setItem("userId", id);
-            window.location.href = `/usuario/${id}`;
-          }
+          window.location.href = `/usuario/${id}`;
         } catch (err) {
-          console.error("POST /api/usuario falhou:", {
-            msg: err.message,
-            status: err.response?.status,
-            data: err.response?.data,
-          });
-          const apiMsg = err.response?.data?.errors
-            ? JSON.stringify(err.response.data.errors)
-            : "Erro no cadastro";
-          alert(apiMsg);
+          console.error(
+            "POST /api/usuario falhou:",
+            err.response?.data || err.message
+          );
+          const errors = err.response?.data?.errors;
+          if (errors) {
+            Object.entries(errors).forEach(([field, msgs]) => {
+              const msg = Array.isArray(msgs) ? msgs[0] : String(msgs);
+              const known = [
+                "nome",
+                "data",
+                "rua",
+                "bairro",
+                "numero",
+                "cep",
+                "cidade",
+                "estado",
+                "complemento",
+                "funcao",
+                "email",
+                "senha",
+              ];
+              if (known.includes(field)) setFieldError(field, msg);
+              else setStatus(msg);
+            });
+          } else {
+            setStatus("Não foi possível concluir o cadastro. Tente novamente.");
+          }
         } finally {
           setSubmitting(false);
         }
       }}
     >
-      {({ isSubmitting }) => (
+      {({ isSubmitting, status }) => (
         <Form>
+          {status && (
+            <div className="alert alert-danger mb-3" role="alert">
+              {status}
+            </div>
+          )}
           <div className="row g-3">
             <div className="col-md-6">
               <label htmlFor="nome" className="form-label">
@@ -77,7 +154,12 @@ export default function RegistrationForm() {
               <label htmlFor="data" className="form-label">
                 Data de nascimento/fundação
               </label>
-              <Field name="data" type="date" className="form-control" />
+              <Field
+                name="data"
+                type="date"
+                className="form-control"
+                max={todayStr}
+              />
               <div className="text-danger">
                 <ErrorMessage name="data" />
               </div>
@@ -86,7 +168,12 @@ export default function RegistrationForm() {
               <label htmlFor="rua" className="form-label">
                 Rua
               </label>
-              <Field name="rua" className="form-control" />
+              <Field
+                name="rua"
+                className="form-control"
+                pattern="[A-Za-zÀ-ÖØ-öø-ÿ\s]+"
+                title="Use apenas letras e espaços"
+              />
               <div className="text-danger">
                 <ErrorMessage name="rua" />
               </div>
@@ -104,7 +191,22 @@ export default function RegistrationForm() {
               <label htmlFor="numero" className="form-label">
                 Número
               </label>
-              <Field name="numero" className="form-control" />
+              <Field name="numero">
+                {({ field, form }) => (
+                  <input
+                    {...field}
+                    id="numero"
+                    className="form-control"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    onInput={(e) => {
+                      e.target.value = e.target.value.replace(/\D/g, "");
+                      form.setFieldValue("numero", e.target.value);
+                    }}
+                    placeholder="Ex.: 123"
+                  />
+                )}
+              </Field>
               <div className="text-danger">
                 <ErrorMessage name="numero" />
               </div>
@@ -113,7 +215,21 @@ export default function RegistrationForm() {
               <label htmlFor="cep" className="form-label">
                 CEP
               </label>
-              <Field name="cep" className="form-control" />
+              <Field name="cep">
+                {({ field, form }) => (
+                  <input
+                    {...field}
+                    id="cep"
+                    className="form-control"
+                    inputMode="numeric"
+                    maxLength={9}
+                    onChange={(e) => {
+                      form.setFieldValue("cep", formatCEP(e.target.value));
+                    }}
+                    placeholder="00000-000"
+                  />
+                )}
+              </Field>
               <div className="text-danger">
                 <ErrorMessage name="cep" />
               </div>
@@ -131,7 +247,11 @@ export default function RegistrationForm() {
               <label htmlFor="estado" className="form-label">
                 Estado
               </label>
-              <Field name="estado" className="form-control" />
+              <Field
+                name="estado"
+                className="form-control text-uppercase"
+                maxLength={2}
+              />
               <div className="text-danger">
                 <ErrorMessage name="estado" />
               </div>
@@ -147,6 +267,9 @@ export default function RegistrationForm() {
                 Função
               </label>
               <Field as="select" name="funcao" className="form-select">
+                <option value="" disabled>
+                  Selecione…
+                </option>
                 <option value="tutor">Tutor</option>
                 <option value="ong">ONG</option>
               </Field>

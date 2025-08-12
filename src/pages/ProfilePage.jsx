@@ -49,7 +49,7 @@ class ProfilePage extends BasePage {
               <strong>Nome:</strong> {usuario.nome}
             </p>
             <p>
-              <strong>Data:</strong>{" "}
+              <strong>Data de nascimento/fundação:</strong>{" "}
               {new Date(usuario.data).toLocaleDateString()}
             </p>
             <p>
@@ -74,5 +74,4 @@ class ProfilePage extends BasePage {
   }
 }
 
-// “Enrola” a ProfilePage no HOC para fornecer this.props.params
 export default withRouter(ProfilePage);
