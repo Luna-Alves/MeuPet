@@ -10,6 +10,8 @@ import logging, jwt, re
 import dns.resolver, dns.exception
 from functools import wraps
 from datetime import date
+from sqlalchemy import func
+
 
 logger = logging.getLogger("meupet")
 
@@ -45,14 +47,13 @@ class Usuario(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
 
-# ===== Model: Pet =====
 class Pet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     usuario = db.relationship('Usuario', backref=db.backref('pets', lazy=True))
 
     nome = db.Column(db.String(120), nullable=False)
-    data_ref = db.Column(db.Date, nullable=False)  # nascimento/chegada
+    data_ref = db.Column(db.Date, nullable=False)
     especie = db.Column(db.String(50), nullable=False)
     porte = db.Column(db.String(20), nullable=False)
     peso = db.Column(db.Float, nullable=False)
@@ -360,21 +361,39 @@ def create_pet(current_user_id):
     try:
         payload = request.get_json(force=True)
         pet = pet_schema.load(payload, session=db.session)
+
+        nome = (pet.nome or "").strip()
+        exists = Pet.query.filter(
+            Pet.usuario_id == current_user_id,
+            func.lower(Pet.nome) == func.lower(nome)
+        ).first()
+        if exists:
+            return jsonify({"errors": {"nome": ["Você já possui um pet com esse nome."]}}), 409
+
         pet.usuario_id = current_user_id
         db.session.add(pet)
         db.session.commit()
         return jsonify(pet_schema.dump(pet)), 201
+
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"errors": {"nome": ["Você já possui um pet com esse nome."]}}), 409
     except Exception as e:
         db.session.rollback()
         logger.exception("Erro inesperado no create_pet: %s", e)
         return jsonify({"errors": {"_": ["Erro interno"]}}), 500
-
+    
 @app.route('/api/pets', methods=['GET'])
 @login_required
 def list_pets(current_user_id):
-    pets = Pet.query.filter_by(usuario_id=current_user_id).order_by(Pet.criado_em.desc()).all()
+    pets = (
+        Pet.query
+        .filter_by(usuario_id=current_user_id)
+        .order_by(func.lower(Pet.nome))
+        .all()
+    )
     return jsonify(pets_schema.dump(pets)), 200
 
 @app.route('/api/pets/<int:pet_id>', methods=['GET'])

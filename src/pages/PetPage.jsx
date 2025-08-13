@@ -9,6 +9,7 @@ export default class PetPage extends BasePage {
     showModal: false,
     pets: [],
     loading: false,
+    successMsg: "",
   };
 
   componentDidMount() {
@@ -32,7 +33,13 @@ export default class PetPage extends BasePage {
   renderContent() {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
-    const { showModal, pets, loading } = this.state;
+    const { showModal, pets, loading, successMsg } = this.state;
+
+    const sortedPets = [...pets].sort((a, b) =>
+      (a.nome || "").localeCompare(b.nome || "", "pt-BR", {
+        sensitivity: "base",
+      })
+    );
 
     if (!token || !userId) {
       return (
@@ -58,6 +65,21 @@ export default class PetPage extends BasePage {
 
     return (
       <div className="container">
+        {successMsg && (
+          <div
+            className="alert alert-success alert-dismissible fade show"
+            role="alert"
+          >
+            {successMsg}
+            <button
+              type="button"
+              className="btn-close"
+              onClick={() => this.setState({ successMsg: "" })}
+              aria-label="Close"
+            />
+          </div>
+        )}
+
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2 className="mb-0">Meus pets</h2>
           <button
@@ -70,15 +92,15 @@ export default class PetPage extends BasePage {
 
         {loading && <div className="text-muted">Carregando...</div>}
 
-        {!loading && pets.length === 0 && (
+        {!loading && sortedPets.length === 0 && (
           <div className="alert alert-secondary">
             Você ainda não cadastrou nenhum pet.
           </div>
         )}
 
-        {!loading && pets.length > 0 && (
+        {!loading && sortedPets.length > 0 && (
           <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-            {pets.map((p) => {
+            {sortedPets.map((p) => {
               const nome = p.nome;
               const especie = p.especie;
               const raca = p.raca;
@@ -147,7 +169,13 @@ export default class PetPage extends BasePage {
           show={showModal}
           onClose={() => this.setState({ showModal: false })}
           onSaved={() => {
-            this.setState({ showModal: false }, () => this.fetchPets());
+            this.setState(
+              { showModal: false, successMsg: "Animal cadastrado com sucesso" },
+              () => {
+                this.fetchPets();
+                setTimeout(() => this.setState({ successMsg: "" }), 3000);
+              }
+            );
           }}
         />
       </div>
