@@ -7,10 +7,10 @@ export default class Header extends React.Component {
   render() {
     return (
       <header className="header-pet text-white p-3">
-        <div className="container d-flex justify-content-between">
-          <div className="d-flex align-items-baseline">
+        <div className="container">
+          <div className="brand">
             <Link to="/">
-              <img src={logo} alt="Logo MeuPet" className="logo-meupet me-2" />
+              <img src={logo} alt="Logo MeuPet" className="logo-meupet" />
             </Link>
             <h1>A saúde do seu melhor amigo nas suas mãos</h1>
           </div>

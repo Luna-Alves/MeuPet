@@ -5,6 +5,8 @@ import cadastroIcon from "../assets/cadastro-usuario.svg";
 import profileIcon from "../assets/perfil.svg";
 import logoutIcon from "../assets/logout.svg";
 import loginIcon from "../assets/login.svg";
+import petIcon from "../assets/pet.svg";
+import { NavbarCollapse } from "react-bootstrap";
 
 export default function MenuSidebar() {
   const token = localStorage.getItem("token");
@@ -30,6 +32,10 @@ export default function MenuSidebar() {
             />
           </NavLink>
 
+          <NavLink to="/pet" className="mb-4" title="Área Pet">
+            <img src={petIcon} alt="Ícone da área pet" className="menu-icon" />
+          </NavLink>
+
           <NavLink to="/login" className="mb-4" title="Entrar ">
             <img
               src={loginIcon}
@@ -49,6 +55,10 @@ export default function MenuSidebar() {
             title="Meu Perfil"
           >
             <img src={profileIcon} alt="Perfil" className="menu-icon" />
+          </NavLink>
+
+          <NavLink to="/pet" className="mb-4" title="Área Pet">
+            <img src={petIcon} alt="Ícone da área pet" className="menu-icon" />
           </NavLink>
 
           <NavLink

@@ -2,16 +2,20 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
-from marshmallow import fields, validates, ValidationError, pre_load, post_load
+from marshmallow import fields, validates, ValidationError, pre_load, post_load, validates_schema
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import logging, jwt, re
 import dns.resolver, dns.exception
+from functools import wraps
+from datetime import date
 
 logger = logging.getLogger("meupet")
 
 ONLY_LETTERS = re.compile(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$')
+PET_ONLY_LETTERS = re.compile(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$')
+
 _resolver = dns.resolver.Resolver(configure=True)
 _resolver.timeout = _resolver.lifetime = 2.0
 
@@ -40,6 +44,24 @@ class Usuario(db.Model):
     funcao = db.Column(db.String(10), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     senha = db.Column(db.String(255), nullable=False)
+
+# ===== Model: Pet =====
+class Pet(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    usuario = db.relationship('Usuario', backref=db.backref('pets', lazy=True))
+
+    nome = db.Column(db.String(120), nullable=False)
+    data_ref = db.Column(db.Date, nullable=False)  # nascimento/chegada
+    especie = db.Column(db.String(50), nullable=False)
+    porte = db.Column(db.String(20), nullable=False)
+    peso = db.Column(db.Float, nullable=False)
+    raca = db.Column(db.String(100), nullable=False)
+    cor_pelagem = db.Column(db.String(100), nullable=False)
+
+    idade_aproximada = db.Column(db.String(50))
+    outras_caracteristicas = db.Column(db.Text)
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
 def _is_hash(s: str) -> bool:
     return isinstance(s, str) and (s.startswith("scrypt$") or s.startswith("pbkdf2:"))
@@ -124,6 +146,124 @@ class UsuarioSchema(SQLAlchemyAutoSchema):
         
 usuario_schema = UsuarioSchema()
 usuarios_schema = UsuarioSchema(many=True)
+
+class PetSchema(SQLAlchemyAutoSchema):
+    data = fields.Date(required=True, data_key='data', attribute='data_ref')
+    usuario_id = fields.Integer(dump_only=True)
+
+    class Meta:
+        model = Pet
+        load_instance = True
+        include_fk = False
+        exclude = ('data_ref',)
+
+    @pre_load
+    def normalize(self, data, **kwargs):
+        if not isinstance(data, dict):
+            return data
+        if 'peso' in data and isinstance(data['peso'], str):
+            data['peso'] = data['peso'].replace(',', '.').strip()
+        for k in ('idade_aproximada', 'outras_caracteristicas'):
+            if k in data and isinstance(data[k], str) and data[k].strip() == '':
+                data[k] = None
+        for k in ('nome', 'especie', 'porte', 'raca', 'cor_pelagem'):
+            if k in data and isinstance(data[k], str):
+                data[k] = data[k].strip()
+        return data
+
+    @validates_schema(pass_original=True)
+    def check_peso_decimal(self, data, original_data, **kwargs):
+        raw = original_data.get('peso')
+        if raw is None or raw == '':
+            raise ValidationError({'peso': ['Obrigatório.']})
+        if isinstance(raw, (int, float)):
+            try:
+                if float(raw) <= 0:
+                    raise ValidationError({'peso': ['Deve ser maior que zero.']})
+                if isinstance(raw, int) or (isinstance(raw, float) and float(raw).is_integer()):
+                    raise ValidationError({'peso': ['Informe com casas decimais, ex.: 7.5']})
+            except Exception:
+                raise ValidationError({'peso': ['Número inválido.']})
+        else:
+            s = str(raw).replace(',', '.').strip()
+            if not re.fullmatch(r'\d+\.\d+', s):
+                raise ValidationError({'peso': ['Informe com casas decimais, ex.: 7.5']})
+            try:
+                if float(s) <= 0:
+                    raise ValidationError({'peso': ['Deve ser maior que zero.']})
+            except Exception:
+                raise ValidationError({'peso': ['Número inválido.']})
+
+    @validates('nome')
+    def v_nome(self, v, **kwargs):
+        if not (v or '').strip():
+            raise ValidationError('Obrigatório.')
+
+    @validates('data')
+    def v_data(self, v, **kwargs):
+        if v > date.today():
+            raise ValidationError('Não pode ser no futuro.')
+
+    @validates('especie')
+    def v_especie(self, v, **kwargs):
+        if not (v or '').strip():
+            raise ValidationError('Obrigatório.')
+
+    @validates('porte')
+    def v_porte(self, v, **kwargs):
+        if not (v or '').strip():
+            raise ValidationError('Obrigatório.')
+
+    @validates('peso')
+    def v_peso(self, v, **kwargs):
+        try:
+            if float(v) <= 0:
+                raise ValidationError('Deve ser maior que zero.')
+        except Exception:
+            raise ValidationError('Número inválido.')
+
+    @validates('raca')
+    def v_raca(self, v, **kwargs):
+        if not (v or '').strip():
+            raise ValidationError('Obrigatório.')
+
+    @validates('cor_pelagem')
+    def v_cor(self, v, **kwargs):
+        s = (v or '').strip()
+        if not s:
+            raise ValidationError('Obrigatório.')
+        if not PET_ONLY_LETTERS.fullmatch(s):
+            raise ValidationError('Use apenas letras (sem números).')
+
+    @validates('idade_aproximada')
+    def v_idade_apx(self, v, **kwargs):
+        if v in (None, ''):
+            return
+        if not re.fullmatch(r'\d+', str(v)):
+            raise ValidationError('Apenas números inteiros.')
+
+pet_schema = PetSchema()
+pets_schema = PetSchema(many=True)
+
+def get_current_user_id():
+    auth = request.headers.get('Authorization', '')
+    if not auth.startswith('Bearer '):
+        return None
+    token = auth.split(' ', 1)[1]
+    try:
+        payload = jwt.decode(token, app.config['JWT_SECRET'], algorithms=['HS256'])
+        return int(payload['sub'])
+    except Exception:
+        return None
+
+def login_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        uid = get_current_user_id()
+        if not uid:
+            return jsonify({"errors": {"_": ["Não autorizado."]}}), 401
+        return fn(uid, *args, **kwargs)
+    return wrapper
 
 def gerar_token(usuario):
     payload = {
@@ -213,6 +353,35 @@ def me():
     if not usuario:
         return jsonify({"error": "Usuário não existe"}), 404
     return jsonify(usuario_schema.dump(usuario)), 200
+
+@app.route('/api/pets', methods=['POST'])
+@login_required
+def create_pet(current_user_id):
+    try:
+        payload = request.get_json(force=True)
+        pet = pet_schema.load(payload, session=db.session)
+        pet.usuario_id = current_user_id
+        db.session.add(pet)
+        db.session.commit()
+        return jsonify(pet_schema.dump(pet)), 201
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
+    except Exception as e:
+        db.session.rollback()
+        logger.exception("Erro inesperado no create_pet: %s", e)
+        return jsonify({"errors": {"_": ["Erro interno"]}}), 500
+
+@app.route('/api/pets', methods=['GET'])
+@login_required
+def list_pets(current_user_id):
+    pets = Pet.query.filter_by(usuario_id=current_user_id).order_by(Pet.criado_em.desc()).all()
+    return jsonify(pets_schema.dump(pets)), 200
+
+@app.route('/api/pets/<int:pet_id>', methods=['GET'])
+@login_required
+def get_pet(current_user_id, pet_id):
+    pet = Pet.query.filter_by(id=pet_id, usuario_id=current_user_id).first_or_404()
+    return jsonify(pet_schema.dump(pet)), 200
 
 @app.errorhandler(404)
 def not_found(e):
