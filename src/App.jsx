@@ -5,6 +5,7 @@ import AccountRegistration from "./pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import PetPage from "./pages/PetPage";
+import VaccinePage from "./pages/VaccinePage";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/usuario/:id" element={<ProfilePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/pet" element={<PetPage />} />
+        <Route path="/pet/:petId/saude" element={<VaccinePage />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,6 +1,10 @@
-flask
-flask-cors
-flask-sqlalchemy
+Flask
+Flask-RESTful
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Cors
 marshmallow
 marshmallow-sqlalchemy
-dnspython==2.6.1
+PyJWT
+Werkzeug
+dnspython

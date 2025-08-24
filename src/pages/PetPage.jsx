@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import BasePage from "./BasePage";
 import api from "../services/api";
 import PetCreateModal from "../components/PetCreateModal";
+import vaccineIcon from "../assets/saudePet.svg";
 
 export default class PetPage extends BasePage {
   state = {
@@ -122,7 +123,20 @@ export default class PetPage extends BasePage {
                       <h5 className="card-title mb-1">{nome}</h5>
                       <div className="text-muted small mb-2">
                         {especie} • {raca}
+                        <Link
+                          to={`/pet/${p.id}/saude`}
+                          title="Saúde do pet"
+                          className="mt-3"
+                        >
+                          <img
+                            src={vaccineIcon}
+                            alt="Saúde do pet"
+                            style={{ width: 24, height: 24 }}
+                          />
+                        </Link>
                       </div>
+
+                      <div className="mt-3 d-flex"></div>
 
                       <ul className="list-unstyled mb-0 small">
                         {dataStr && (
