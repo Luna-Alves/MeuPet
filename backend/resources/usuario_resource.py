@@ -1,4 +1,5 @@
 # backend/resources/usuario_resource.py
+import os
 from flask import request, g
 from flask_restful import Resource
 from sqlalchemy.exc import IntegrityError
@@ -44,12 +45,25 @@ class UsuarioDetailResource(Resource):
 
 
 class MeResource(Resource):
-    """
-    Retorna o usuário logado com base no token JWT.
-    Requer o decorator login_required que popula g.current_user_id.
-    """
     method_decorators = [login_required]
 
     def get(self):
         u = Usuario.query.get_or_404(g.current_user_id)
         return usuario_schema.dump(u), 200
+
+
+# 🔧 Debug somente em dev
+class UsuarioDebugListResource(Resource):
+    def get(self):
+        if os.environ.get("APP_ENV") != "dev":
+            return {"error": "forbidden"}, 403
+        users = Usuario.query.all()
+        return [
+            {
+                "id": u.id,
+                "email": u.email,
+                "senha_prefix": (u.senha or "")[:12],
+                "len": len(u.senha or ""),
+            }
+            for u in users
+        ], 200

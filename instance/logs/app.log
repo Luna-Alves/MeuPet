@@ -18,3 +18,25 @@
 2025-08-24 19:48:43,345 | INFO | meupet | __init__.py:53 | MeuPet inicializado.
 2025-08-25 08:21:29,423 | INFO | meupet | __init__.py:53 | MeuPet inicializado.
 2025-08-25 08:28:22,567 | INFO | meupet | __init__.py:53 | MeuPet inicializado.
+2025-08-25 08:54:45,310 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 08:57:12,487 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 08:57:12,654 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 08:57:13,934 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 08:57:14,080 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 09:01:29,722 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:01:29,967 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 09:01:56,718 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:01:57,005 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 09:04:39,208 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:04:52,977 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:06:42,475 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:06:42,707 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 09:06:43,747 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:06:43,914 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 09:07:47,517 | INFO | meupet | auth_resource.py:51 | Login falhou: senha incorreta para user_id=1
+2025-08-25 09:47:07,877 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:47:08,797 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 09:47:37,309 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:47:37,509 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 09:47:38,726 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 09:47:38,876 | INFO | meupet | __init__.py:57 | MeuPet inicializado.

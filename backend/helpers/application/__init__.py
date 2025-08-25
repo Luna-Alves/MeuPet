@@ -9,6 +9,8 @@ from helpers.cors import init_cors
 from helpers.logging import logger
 from helpers.api import api_bp, register_resources
 
+
+
 def _sqlite_instance_uri() -> str:
     base_dir = Path(__file__).resolve().parents[2]  # .../backend/helpers/application
     instance_dir = base_dir.parent / "instance"
@@ -24,6 +26,8 @@ def create_app() -> Flask:
     app.config.setdefault("JWT_SECRET", os.environ.get("JWT_SECRET", "123456789"))
     app.config.setdefault("JSON_SORT_KEYS", False)
     app.config.setdefault("PERMANENT_SESSION_LIFETIME", timedelta(days=7))
+
+    logger.info(f"DB: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
     init_db(app)
     init_cors(app)

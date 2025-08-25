@@ -1,9 +1,10 @@
-import re, dns.resolver, dns.exception
+import os, re, dns.resolver, dns.exception
 from werkzeug.security import generate_password_hash
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields, validates, ValidationError, pre_load, post_load
 from models.usuario import Usuario
 from datetime import date
+
 
 ONLY_LETTERS = re.compile(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$')
 _resolver = dns.resolver.Resolver(configure=True)
@@ -17,14 +18,9 @@ def has_mx(domain: str) -> bool:
         return False
 
 def _is_hash(s: str) -> bool:
-    return isinstance(s, str) and (s.startswith("scrypt$") or s.startswith("pbkdf2:"))
+    return isinstance(s, str) and (s.startswith("pbkdf2:") or s.startswith("scrypt:"))
 
-def _tem_18_ou_mais(nascimento: date) -> bool:
-    hoje = date.today()
-    anos = hoje.year - nascimento.year
-    if (hoje.month, hoje.day) < (nascimento.month, nascimento.day):
-        anos -= 1
-    return anos >= 18
+HASH_METHOD = os.environ.get("HASH_METHOD", "pbkdf2:sha256")  # padroniza
 
 class UsuarioSchema(SQLAlchemyAutoSchema):
     # senha agora é opcional neste schema base (útil para updates)
@@ -48,16 +44,21 @@ class UsuarioSchema(SQLAlchemyAutoSchema):
     @post_load
     def only_hash_when_present(self, data, **kwargs):
         """
-        Regra desejada:
-        - Só toca em 'senha' se a chave existir no payload.
+        Regra:
+        - Só toca em 'senha' se a chave/campo existir no payload.
         - Se existir e não estiver hasheada => hashear.
-        - Se não existir => NÃO mexe.
-        - Nunca re-hash em cargas vindas do banco/dump.
+        - Suporta tanto dict quanto instância (load_instance=True).
         """
-        if isinstance(data, dict) and 'senha' in data:
-            s = data['senha']
-            if s and not _is_hash(s):
-                data['senha'] = generate_password_hash(s)
+        if isinstance(data, dict):
+            if 'senha' in data:
+                s = data['senha']
+                if s and not _is_hash(s):
+                    data['senha'] = generate_password_hash(s, method=HASH_METHOD, salt_length=16)
+            return data
+
+        # data é uma instância de Usuario
+        if hasattr(data, 'senha') and data.senha and not _is_hash(data.senha):
+            data.senha = generate_password_hash(data.senha, method=HASH_METHOD, salt_length=16)
         return data
 
     @validates('nome')
