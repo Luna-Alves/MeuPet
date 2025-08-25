@@ -1,14 +1,32 @@
-// src/pages/VaccinePage.jsx
 import React from "react";
 import BasePage from "./BasePage";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
 import VaccineCreateModal from "../components/VaccineCreateModal";
+import vaccineIcon from "../assets/saudePet.svg";
 
 function VaccinePageWrapper() {
   const { petId } = useParams();
   return <VaccinePage petId={petId} />;
 }
+
+const formatBR = (iso) => {
+  if (!iso) return "-";
+  const [y, m, d] = String(iso).split("-").map(Number);
+  if (!y || !m || !d) return "-";
+  const dd = String(d).padStart(2, "0");
+  const mm = String(m).padStart(2, "0");
+  return `${dd}/${mm}/${y}`;
+};
+
+const cmpISOdesc = (a, b) => {
+  const A = a?.aplicacao || "";
+  const B = b?.aplicacao || "";
+  if (!A && !B) return 0;
+  if (!A) return 1;
+  if (!B) return -1;
+  return A < B ? 1 : A > B ? -1 : 0;
+};
 
 export class VaccinePage extends BasePage {
   state = {
@@ -23,12 +41,11 @@ export class VaccinePage extends BasePage {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
     if (!token || !userId) {
-      // sem mensagem — apenas redireciona:
       window.location.href = "/login";
       return;
     }
     await this.fetchVaccines();
-    await this.fetchPetInfo(); // opcional (mostrar nome do pet no título)
+    await this.fetchPetInfo();
   }
 
   async fetchVaccines() {
@@ -97,38 +114,61 @@ export class VaccinePage extends BasePage {
 
         {!loading && vaccines.length > 0 && (
           <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-            {[...vaccines]
-              .sort((a, b) => new Date(b.data) - new Date(a.data)) // mais recente primeiro
-              .map((v) => {
-                const data = v.data
-                  ? new Date(v.data).toLocaleDateString("pt-BR")
-                  : "-";
-                const proxima = v.proxima
-                  ? new Date(v.proxima).toLocaleDateString("pt-BR")
-                  : "-";
-                return (
-                  <div className="col" key={v.id}>
-                    <div className="card h-100 shadow-sm">
-                      <div className="card-body">
-                        <h5 className="card-title mb-1">{v.nome}</h5>
-                        <ul className="list-unstyled mb-0 small">
-                          <li>
-                            <strong>Aplicação:</strong> {data}
-                          </li>
-                          <li>
-                            <strong>Próxima dose:</strong> {proxima}
-                          </li>
-                          {v.observacoes && (
-                            <li>
-                              <strong>Observações:</strong> {v.observacoes}
-                            </li>
-                          )}
-                        </ul>
+            {[...vaccines].sort(cmpISOdesc).map((v) => {
+              const aplicacao = formatBR(v.aplicacao);
+              const proxima = formatBR(v.revacinacao);
+              const venc = formatBR(v.vencimento);
+
+              return (
+                <div className="col" key={v.id}>
+                  <div className="card h-100 shadow-sm">
+                    <div className="card-body">
+                      <div className="d-flex align-items-start gap-2">
+                        <h5 className="card-title mb-1 flex-grow-1">
+                          {v.nome}
+                        </h5>
+                        <Link
+                          to={`/pet/${v.pet_id || this.props.petId}/saude`}
+                          title="Saúde do pet"
+                        >
+                          <img
+                            src={vaccineIcon}
+                            alt="Saúde do pet"
+                            style={{ width: 24, height: 24 }}
+                          />
+                        </Link>
                       </div>
+
+                      <ul className="list-unstyled mb-0 small mt-2">
+                        <li>
+                          <strong>Aplicação:</strong> {aplicacao}
+                        </li>
+                        <li>
+                          <strong>Próxima dose:</strong> {proxima}
+                        </li>
+                        <li>
+                          <strong>Vencimento:</strong> {venc}
+                        </li>
+                        <li>
+                          <strong>Fabricante:</strong> {v.fabricante || "-"}
+                        </li>
+                        <li>
+                          <strong>Lote:</strong> {v.lote || "-"}
+                        </li>
+                        <li>
+                          <strong>Dose:</strong> {v.dose_tamanho || "-"}
+                        </li>
+                        {v.observacoes && (
+                          <li>
+                            <strong>Observações:</strong> {v.observacoes}
+                          </li>
+                        )}
+                      </ul>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
           </div>
         )}
 
