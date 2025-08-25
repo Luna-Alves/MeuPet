@@ -5,6 +5,35 @@ import api from "../services/api";
 import PetCreateModal from "../components/PetCreateModal";
 import vaccineIcon from "../assets/saudePet.svg";
 
+const formatBR = (iso) => {
+  if (!iso) return null;
+  const [y, m, d] = String(iso).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const dd = String(d).padStart(2, "0");
+  const mm = String(m).padStart(2, "0");
+  return `${dd}/${mm}/${y}`;
+};
+
+const ageFrom = (iso) => {
+  if (!iso) return null;
+  const [y, m, d] = String(iso).split("-").map(Number);
+  const dob = new Date(y, m - 1, d);
+  if (isNaN(dob)) return null;
+  const today = new Date();
+  let years = today.getFullYear() - dob.getFullYear();
+  let months = today.getMonth() - dob.getMonth();
+  if (today.getDate() < d) months -= 1;
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  if (years < 0) return null;
+  if (years >= 2)
+    return months ? `${years} anos e ${months} mês(es)` : `${years} anos`;
+  if (years === 1) return months ? `1 ano e ${months} mês(es)` : `1 ano`;
+  return `${months} mês(es)`;
+};
+
 export default class PetPage extends BasePage {
   state = {
     showModal: false,
@@ -110,23 +139,32 @@ export default class PetPage extends BasePage {
               const pelagem = p.cor_pelagem;
               const idadeApx = p.idade_aproximada;
               const outras = p.outras_caracteristicas;
-              let dataStr = "";
-              try {
-                if (p.data)
-                  dataStr = new Date(p.data).toLocaleDateString("pt-BR");
-              } catch {}
+
+              const nascISO = p.data_nascimento || null;
+              const chegISO = p.data_chegada || null;
+              const nascBR = nascISO ? formatBR(nascISO) : null;
+              const chegBR = chegISO ? formatBR(chegISO) : null;
+
+              const idadeAuto = nascISO ? ageFrom(nascISO) : null;
+              const idadeDisplay = nascISO
+                ? idadeAuto
+                : chegISO && idadeApx
+                ? idadeApx
+                : null;
 
               return (
                 <div className="col" key={p.id}>
                   <div className="card h-100 shadow-sm">
                     <div className="card-body">
                       <h5 className="card-title mb-1">{nome}</h5>
-                      <div className="text-muted small mb-2">
-                        {especie} • {raca}
+                      <div className="text-muted small mb-2 d-flex align-items-center gap-2">
+                        <span>
+                          {especie} • {raca}
+                        </span>
                         <Link
                           to={`/pet/${p.id}/saude`}
                           title="Saúde do pet"
-                          className="mt-3"
+                          className="ms-auto"
                         >
                           <img
                             src={vaccineIcon}
@@ -136,12 +174,20 @@ export default class PetPage extends BasePage {
                         </Link>
                       </div>
 
-                      <div className="mt-3 d-flex"></div>
-
                       <ul className="list-unstyled mb-0 small">
-                        {dataStr && (
+                        {nascBR && (
                           <li>
-                            <strong>Nasc./Chegada:</strong> {dataStr}
+                            <strong>Data de nascimento:</strong> {nascBR}
+                          </li>
+                        )}
+                        {chegBR && (
+                          <li>
+                            <strong>Data de chegada:</strong> {chegBR}
+                          </li>
+                        )}
+                        {idadeDisplay && (
+                          <li>
+                            <strong>Idade:</strong> {idadeDisplay}
                           </li>
                         )}
                         <li>
@@ -160,11 +206,6 @@ export default class PetPage extends BasePage {
                         <li>
                           <strong>Pelagem:</strong> {pelagem}
                         </li>
-                        {idadeApx && (
-                          <li>
-                            <strong>Idade apx.:</strong> {idadeApx}
-                          </li>
-                        )}
                         {outras && (
                           <li>
                             <strong>Outras características:</strong> {outras}

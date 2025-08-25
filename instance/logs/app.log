@@ -40,3 +40,14 @@
 2025-08-25 09:47:37,509 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
 2025-08-25 09:47:38,726 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
 2025-08-25 09:47:38,876 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 10:00:57,827 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 10:03:23,070 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 10:03:23,230 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 10:03:24,337 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 10:03:24,501 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 10:26:14,243 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 10:26:14,459 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 11:34:19,779 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 11:34:19,978 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-25 11:34:52,877 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-25 11:34:53,157 | INFO | meupet | __init__.py:57 | MeuPet inicializado.

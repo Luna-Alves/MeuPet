@@ -2,20 +2,20 @@ import re
 from datetime import date
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields, validates, ValidationError, pre_load, validates_schema
-from sqlalchemy import func
 from models.pet import Pet
 
 PET_ONLY_LETTERS = re.compile(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$')
 
 class PetSchema(SQLAlchemyAutoSchema):
-    data = fields.Date(required=True, data_key='data', attribute='data_ref')
+    data_nascimento = fields.Date(allow_none=True)
+    data_chegada    = fields.Date(allow_none=True)
+
     usuario_id = fields.Integer(dump_only=True)
 
     class Meta:
         model = Pet
         load_instance = True
         include_fk = False
-        exclude = ('data_ref',)
 
     @pre_load
     def normalize(self, data, **kwargs):
@@ -31,27 +31,22 @@ class PetSchema(SQLAlchemyAutoSchema):
                 data[k] = data[k].strip()
         return data
 
-    @validates_schema(pass_original=True)
-    def check_peso_decimal(self, data, original_data, **kwargs):
-        raw = original_data.get('peso')
-        if raw is None or raw == '':
-            raise ValidationError({'peso': ['Obrigatório.']})
-        if isinstance(raw, (int, float)):
-            if float(raw) <= 0:
-                raise ValidationError({'peso': ['Deve ser maior que zero.']})
-            if isinstance(raw, int) or (isinstance(raw, float) and float(raw).is_integer()):
-                raise ValidationError({'peso': ['Informe com casas decimais, ex.: 7.5']})
-        else:
-            s = str(raw).replace(',', '.').strip()
-            if not re.fullmatch(r'\d+\.\d+', s):
-                raise ValidationError({'peso': ['Informe com casas decimais, ex.: 7.5']})
-            if float(s) <= 0:
-                raise ValidationError({'peso': ['Deve ser maior que zero.']})
+    @validates_schema
+    def validate_dates(self, data, **kwargs):
+        nasc = data.get('data_nascimento')
+        cheg = data.get('data_chegada')
+        today = date.today()
 
-    @validates('data')
-    def v_data(self, v, **kwargs):
-        if v > date.today():
-            raise ValidationError('Não pode ser no futuro.')
+        if not nasc and not cheg:
+            raise ValidationError({'data_nascimento': ['Informe data de nascimento ou data de chegada.'],
+                                   'data_chegada':    ['Informe data de nascimento ou data de chegada.']})
+
+        if nasc and nasc > today:
+            raise ValidationError({'data_nascimento': ['Não pode ser no futuro.']})
+        if cheg and cheg > today:
+            raise ValidationError({'data_chegada': ['Não pode ser no futuro.']})
+        if nasc and cheg and cheg < nasc:
+            raise ValidationError({'data_chegada': ['Data de chegada não pode ser anterior à data de nascimento.']})
 
     @validates('cor_pelagem')
     def v_cor(self, v, **kwargs):

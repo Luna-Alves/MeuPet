@@ -23,7 +23,6 @@ def _is_hash(s: str) -> bool:
 HASH_METHOD = os.environ.get("HASH_METHOD", "pbkdf2:sha256")  # padroniza
 
 class UsuarioSchema(SQLAlchemyAutoSchema):
-    # senha agora é opcional neste schema base (útil para updates)
     senha = fields.String(load_only=True)
 
     class Meta:

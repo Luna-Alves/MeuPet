@@ -14,36 +14,40 @@ class PetListResource(Resource):
     method_decorators = [login_required]
 
     def get(self):
-        pets = (
-            Pet.query
-            .filter_by(usuario_id=g.current_user_id)
-            .order_by(func.lower(Pet.nome))
-            .all()
-        )
+        pets = (Pet.query
+                .filter_by(usuario_id=g.current_user_id)
+                .order_by(func.lower(Pet.nome))
+                .all())
         return pets_schema.dump(pets), 200
 
     def post(self):
         try:
-            payload = request.get_json(force=True)
+            payload = request.get_json(force=True) or {}
             pet = pet_schema.load(payload, session=db.session)
 
-            exists = Pet.query.filter(
-                Pet.usuario_id == g.current_user_id,
-                func.lower(Pet.nome) == func.lower((pet.nome or "").strip())
-            ).first()
+            nome_norm = (pet.nome or "").strip()
+            if not nome_norm:
+                return {"errors": {"nome": ["Campo obrigatório."]}}, 400
+
+            exists = (Pet.query
+                      .filter(Pet.usuario_id == g.current_user_id,
+                              func.lower(Pet.nome) == func.lower(nome_norm))
+                      .first())
             if exists:
                 return {"errors": {"nome": ["Você já possui um pet com esse nome."]}}, 409
 
+            pet.nome = nome_norm
             pet.usuario_id = g.current_user_id
             db.session.add(pet)
             db.session.commit()
             return pet_schema.dump(pet), 201
 
         except ValidationError as err:
-            return {"errors": err.messages}, 400
-        except IntegrityError:
             db.session.rollback()
-            return {"errors": {"nome": ["Você já possui um pet com esse nome."]}}, 409
+            return {"errors": err.messages}, 400
+        except Exception as e:
+            db.session.rollback()
+            return {"errors": {"_": [str(e)]}}, 500
 
 class PetDetailResource(Resource):
     method_decorators = [login_required]
