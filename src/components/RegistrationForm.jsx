@@ -5,7 +5,18 @@ import api from "../services/api";
 
 const onlyLetters = /^[\p{L}\s]+$/u;
 const today = new Date();
-const todayStr = new Date().toISOString().split("T")[0];
+
+const eighteenYearsAgo = new Date(
+  today.getFullYear() - 18,
+  today.getMonth(),
+  today.getDate()
+);
+
+const toISODateLocal = (d) => {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+const eighteenYearsAgoStr = toISODateLocal(eighteenYearsAgo);
 
 const validationSchema = Yup.object({
   nome: Yup.string()
@@ -14,7 +25,8 @@ const validationSchema = Yup.object({
     .required("Campo obrigatório"),
 
   data: Yup.date()
-    .max(today, "Não pode ser no futuro")
+    .typeError("Data inválida.")
+    .max(eighteenYearsAgo, "Você precisa ter 18 anos ou mais.")
     .required("Campo obrigatório"),
 
   rua: Yup.string()
@@ -90,12 +102,10 @@ export default function RegistrationForm() {
           values.funcao = (values.funcao || "").toLowerCase();
           values.email = (values.email || "").trim().toLowerCase();
 
-          const resp = await api.post("/usuario", values); // baseURL '/api'
+          const resp = await api.post("/usuario", values);
           const { id, token } = resp.data;
-          // guarda sessão
           localStorage.setItem("token", token);
           localStorage.setItem("userId", id);
-          // feedback e redireciona
           alert("Responsável cadastrado com sucesso!");
           resetForm();
           window.location.href = `/usuario/${id}`;
@@ -158,7 +168,7 @@ export default function RegistrationForm() {
                 name="data"
                 type="date"
                 className="form-control"
-                max={todayStr}
+                max={eighteenYearsAgoStr}
               />
               <div className="text-danger">
                 <ErrorMessage name="data" />

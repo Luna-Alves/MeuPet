@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields, validates, ValidationError, pre_load, post_load
 from models.usuario import Usuario
+from datetime import date
 
 ONLY_LETTERS = re.compile(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$')
 _resolver = dns.resolver.Resolver(configure=True)
@@ -17,6 +18,13 @@ def has_mx(domain: str) -> bool:
 
 def _is_hash(s: str) -> bool:
     return isinstance(s, str) and (s.startswith("scrypt$") or s.startswith("pbkdf2:"))
+
+def _tem_18_ou_mais(nascimento: date) -> bool:
+    hoje = date.today()
+    anos = hoje.year - nascimento.year
+    if (hoje.month, hoje.day) < (nascimento.month, nascimento.day):
+        anos -= 1
+    return anos >= 18
 
 class UsuarioSchema(SQLAlchemyAutoSchema):
     # senha agora é opcional neste schema base (útil para updates)
@@ -84,6 +92,13 @@ class UsuarioSchema(SQLAlchemyAutoSchema):
         domain = v.split('@', 1)[1].strip().lower()
         if not has_mx(domain):
             raise ValidationError('O domínio do e-mail não existe ou não recebe e-mails (sem registro MX).')
+    
+    @validates('data')
+    def val_data_nascimento(self, v: date, **kwargs):
+        hoje = date.today()
+        anos = hoje.year - v.year - ((hoje.month, hoje.day) < (v.month, v.day))
+        if anos < 18:
+            raise ValidationError('Você precisa ter 18 anos ou mais para se cadastrar.')
 
 # Schema específico para criação: senha obrigatória
 class UsuarioCreateSchema(UsuarioSchema):
