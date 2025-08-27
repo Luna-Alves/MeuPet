@@ -1,9 +1,21 @@
+// src/pages/PetPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import BasePage from "./BasePage";
 import api from "../services/api";
 import PetCreateModal from "../components/PetCreateModal";
+import PetEditModal from "../components/PetEditModal";
 import vaccineIcon from "../assets/saudePet.svg";
+
+const humanize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
+const humanizePorte = (p) => (p === "medio" ? "Médio" : humanize(p));
+const pesoBR = (v) =>
+  v == null || isNaN(Number(v))
+    ? "-"
+    : Number(v).toLocaleString("pt-BR", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 2,
+      });
 
 const formatBR = (iso) => {
   if (!iso) return null;
@@ -37,6 +49,8 @@ const ageFrom = (iso) => {
 export default class PetPage extends BasePage {
   state = {
     showModal: false,
+    showEditModal: false,
+    editingPet: null,
     pets: [],
     loading: false,
     successMsg: "",
@@ -60,10 +74,42 @@ export default class PetPage extends BasePage {
     }
   }
 
+  openEditModal = (pet) => {
+    this.setState({ showEditModal: true, editingPet: pet });
+  };
+
+  closeEditModal = () => {
+    this.setState({ showEditModal: false, editingPet: null });
+  };
+
+  handleDelete = async (pet) => {
+    if (
+      !window.confirm(
+        `Excluir o pet "${pet.nome}"? Esta ação removerá também as vacinas.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await api.delete(`/pets/${pet.id}`);
+      this.setState({ successMsg: "Pet excluído com sucesso." }, () => {
+        this.fetchPets();
+        setTimeout(() => this.setState({ successMsg: "" }), 3000);
+      });
+    } catch (e) {
+      alert("Não foi possível excluir o pet.");
+      console.error(
+        "DELETE /api/pets/:id falhou",
+        e.response?.data || e.message
+      );
+    }
+  };
+
   renderContent() {
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
-    const { showModal, pets, loading, successMsg } = this.state;
+    const { showModal, showEditModal, editingPet, pets, loading, successMsg } =
+      this.state;
 
     const sortedPets = [...pets].sort((a, b) =>
       (a.nome || "").localeCompare(b.nome || "", "pt-BR", {
@@ -131,87 +177,94 @@ export default class PetPage extends BasePage {
         {!loading && sortedPets.length > 0 && (
           <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
             {sortedPets.map((p) => {
-              const nome = p.nome;
-              const especie = p.especie;
-              const raca = p.raca;
-              const porte = p.porte;
-              const peso = Number(p.peso);
-              const pelagem = p.cor_pelagem;
-              const idadeApx = p.idade_aproximada;
-              const outras = p.outras_caracteristicas;
-
-              const nascISO = p.data_nascimento || null;
-              const chegISO = p.data_chegada || null;
-              const nascBR = nascISO ? formatBR(nascISO) : null;
-              const chegBR = chegISO ? formatBR(chegISO) : null;
-
-              const idadeAuto = nascISO ? ageFrom(nascISO) : null;
-              const idadeDisplay = nascISO
-                ? idadeAuto
-                : chegISO && idadeApx
-                ? idadeApx
+              const nasc = p.data_nascimento
+                ? formatBR(p.data_nascimento)
+                : null;
+              const cheg = p.data_chegada ? formatBR(p.data_chegada) : null;
+              const idade = p.data_nascimento
+                ? ageFrom(p.data_nascimento)
+                : p.data_chegada && p.idade_aproximada
+                ? p.idade_aproximada
                 : null;
 
               return (
                 <div className="col" key={p.id}>
                   <div className="card h-100 shadow-sm">
                     <div className="card-body">
-                      <h5 className="card-title mb-1">{nome}</h5>
-                      <div className="text-muted small mb-2 d-flex align-items-center gap-2">
-                        <span>
-                          {especie} • {raca}
-                        </span>
-                        <Link
-                          to={`/pet/${p.id}/saude`}
-                          title="Saúde do pet"
-                          className="ms-auto"
-                        >
-                          <img
-                            src={vaccineIcon}
-                            alt="Saúde do pet"
-                            style={{ width: 24, height: 24 }}
-                          />
-                        </Link>
+                      <div className="d-flex align-items-start justify-content-between">
+                        <div>
+                          <h5 className="card-title mb-1">{p.nome}</h5>
+                          <div className="text-muted small mb-2">
+                            {p.especie} • {p.raca}
+                            <Link
+                              to={`/pet/${p.id}/saude`}
+                              title="Saúde do pet"
+                              className="ms-2 align-middle d-inline-block"
+                            >
+                              <img
+                                src={vaccineIcon}
+                                alt="Saúde do pet"
+                                style={{ width: 20, height: 20 }}
+                              />
+                            </Link>
+                          </div>
+                        </div>
                       </div>
 
                       <ul className="list-unstyled mb-0 small">
-                        {nascBR && (
+                        {nasc && (
                           <li>
-                            <strong>Data de nascimento:</strong> {nascBR}
+                            <strong>Data de nascimento:</strong> {nasc}
+                            {idade && (
+                              <>
+                                {" "}
+                                &nbsp;•&nbsp;<strong>Idade:</strong> {idade}
+                              </>
+                            )}
                           </li>
                         )}
-                        {chegBR && (
+                        {!nasc && cheg && (
                           <li>
-                            <strong>Data de chegada:</strong> {chegBR}
-                          </li>
-                        )}
-                        {idadeDisplay && (
-                          <li>
-                            <strong>Idade:</strong> {idadeDisplay}
+                            <strong>Data de chegada:</strong> {cheg}
+                            {idade && (
+                              <>
+                                {" "}
+                                &nbsp;•&nbsp;<strong>Idade:</strong> {idade}
+                              </>
+                            )}
                           </li>
                         )}
                         <li>
-                          <strong>Porte:</strong> {porte}
+                          <strong>Porte:</strong> {humanizePorte(p.porte)}
                         </li>
                         <li>
-                          <strong>Peso:</strong>{" "}
-                          {isNaN(peso)
-                            ? "-"
-                            : peso.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 1,
-                                maximumFractionDigits: 2,
-                              })}{" "}
-                          kg
+                          <strong>Peso:</strong> {pesoBR(p.peso)} kg
                         </li>
                         <li>
-                          <strong>Pelagem:</strong> {pelagem}
+                          <strong>Pelagem:</strong> {p.cor_pelagem}
                         </li>
-                        {outras && (
+                        {p.outras_caracteristicas && (
                           <li>
-                            <strong>Outras características:</strong> {outras}
+                            <strong>Outras características:</strong>{" "}
+                            {p.outras_caracteristicas}
                           </li>
                         )}
                       </ul>
+
+                      <div className="d-flex gap-2 mt-3">
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => this.openEditModal(p)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => this.handleDelete(p)}
+                        >
+                          Excluir
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -220,12 +273,29 @@ export default class PetPage extends BasePage {
           </div>
         )}
 
+        {/* Modal de criação */}
         <PetCreateModal
           show={showModal}
           onClose={() => this.setState({ showModal: false })}
           onSaved={() => {
             this.setState(
               { showModal: false, successMsg: "Animal cadastrado com sucesso" },
+              () => {
+                this.fetchPets();
+                setTimeout(() => this.setState({ successMsg: "" }), 3000);
+              }
+            );
+          }}
+        />
+
+        {/* Modal de edição */}
+        <PetEditModal
+          show={showEditModal}
+          pet={editingPet}
+          onClose={this.closeEditModal}
+          onSaved={() => {
+            this.setState(
+              { successMsg: "Dados do pet atualizados com sucesso." },
               () => {
                 this.fetchPets();
                 setTimeout(() => this.setState({ successMsg: "" }), 3000);
