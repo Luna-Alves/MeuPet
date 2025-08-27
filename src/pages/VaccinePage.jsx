@@ -1,9 +1,8 @@
 import React from "react";
 import BasePage from "./BasePage";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import api from "../services/api";
 import VaccineCreateModal from "../components/VaccineCreateModal";
-import vaccineIcon from "../assets/saudePet.svg";
 
 function VaccinePageWrapper() {
   const { petId } = useParams();
@@ -123,21 +122,7 @@ export class VaccinePage extends BasePage {
                 <div className="col" key={v.id}>
                   <div className="card h-100 shadow-sm">
                     <div className="card-body">
-                      <div className="d-flex align-items-start gap-2">
-                        <h5 className="card-title mb-1 flex-grow-1">
-                          {v.nome}
-                        </h5>
-                        <Link
-                          to={`/pet/${v.pet_id || this.props.petId}/saude`}
-                          title="Saúde do pet"
-                        >
-                          <img
-                            src={vaccineIcon}
-                            alt="Saúde do pet"
-                            style={{ width: 24, height: 24 }}
-                          />
-                        </Link>
-                      </div>
+                      <h5 className="card-title mb-1">{v.nome}</h5>
 
                       <ul className="list-unstyled mb-0 small mt-2">
                         <li>

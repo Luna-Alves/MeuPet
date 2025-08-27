@@ -3,9 +3,16 @@ from helpers.database import db
 
 class Pet(db.Model):
     __tablename__ = "pet"
+    __table_args__ = {"sqlite_autoincrement": True}
+
     id          = db.Column(db.Integer, primary_key=True)
-    usuario_id  = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-    usuario     = db.relationship('Usuario', backref=db.backref('pets', lazy=True))
+    usuario_id  = db.Column(
+        db.Integer,
+        db.ForeignKey("usuario.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    usuario     = db.relationship("Usuario", back_populates="pets")
 
     nome        = db.Column(db.String(120), nullable=False)
 
@@ -18,6 +25,14 @@ class Pet(db.Model):
     raca        = db.Column(db.String(100), nullable=False)
     cor_pelagem = db.Column(db.String(100), nullable=False)
 
-    idade_aproximada      = db.Column(db.String(50))
+    idade_aproximada       = db.Column(db.String(50))
     outras_caracteristicas = db.Column(db.Text)
-    criado_em             = db.Column(db.DateTime, default=datetime.utcnow)
+    criado_em              = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # vacinas do pet com cascade
+    vacinas = db.relationship(
+        "Vacina",
+        back_populates="pet",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

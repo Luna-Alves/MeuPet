@@ -1,15 +1,24 @@
-from __future__ import annotations
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
-db: SQLAlchemy = SQLAlchemy()
-migrate: Migrate = Migrate()
+db = SQLAlchemy()
+migrate = Migrate()
 
-def init_db(app) -> None:
-    app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
-    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {
-        "pool_pre_ping": True,
-        "pool_recycle": 280,
-    })
+# Liga PRAGMA foreign_keys=ON em conexões SQLite
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    try:
+        from sqlite3 import Connection as SQLite3Connection
+        if isinstance(dbapi_connection, SQLite3Connection):
+            cur = dbapi_connection.cursor()
+            cur.execute("PRAGMA foreign_keys=ON")
+            cur.close()
+    except Exception:
+        # silencioso: se não for SQLite, ignora
+        pass
+
+def init_db(app):
     db.init_app(app)
     migrate.init_app(app, db)
