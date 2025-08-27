@@ -97,3 +97,9 @@
 2025-08-27 08:43:08,504 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
 2025-08-27 08:43:41,449 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
 2025-08-27 08:43:41,688 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-27 08:57:16,434 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-27 08:57:16,637 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-27 08:57:48,611 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-27 08:57:48,800 | INFO | meupet | __init__.py:57 | MeuPet inicializado.
+2025-08-27 08:58:14,717 | INFO | meupet | __init__.py:30 | DB: sqlite:///E:/TSI_06/desenvolvimento_e_execucao_de_projeto_de_software/TCC/projeto_meu_pet/meu_pet/instance/meupet.db
+2025-08-27 08:58:14,934 | INFO | meupet | __init__.py:57 | MeuPet inicializado.

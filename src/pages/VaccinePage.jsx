@@ -1,8 +1,10 @@
+// src/pages/VaccinePage.jsx
 import React from "react";
 import BasePage from "./BasePage";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
 import VaccineCreateModal from "../components/VaccineCreateModal";
+import VaccineEditModal from "../components/VaccineEditModal";
 
 function VaccinePageWrapper() {
   const { petId } = useParams();
@@ -32,8 +34,10 @@ export class VaccinePage extends BasePage {
     loading: false,
     vaccines: [],
     showModal: false,
+    showEditModal: false,
     successMsg: "",
     petInfo: null,
+    selected: null,
   };
 
   async componentDidMount() {
@@ -71,8 +75,34 @@ export class VaccinePage extends BasePage {
     } catch {}
   }
 
+  async handleDelete(vac) {
+    if (
+      !window.confirm(
+        `Excluir a vacina "${vac.nome}"? Esta ação não pode ser desfeita.`
+      )
+    )
+      return;
+    try {
+      await api.delete(`/pets/${this.props.petId}/vacinas/${vac.id}`);
+      this.setState({ successMsg: "Vacina excluída com sucesso" }, () => {
+        this.fetchVaccines();
+        setTimeout(() => this.setState({ successMsg: "" }), 3000);
+      });
+    } catch (e) {
+      alert("Não foi possível excluir a vacina.");
+    }
+  }
+
   renderContent() {
-    const { vaccines, loading, showModal, successMsg, petInfo } = this.state;
+    const {
+      vaccines,
+      loading,
+      showModal,
+      showEditModal,
+      successMsg,
+      petInfo,
+      selected,
+    } = this.state;
 
     return (
       <div className="container">
@@ -120,11 +150,11 @@ export class VaccinePage extends BasePage {
 
               return (
                 <div className="col" key={v.id}>
-                  <div className="card h-100 shadow-sm">
-                    <div className="card-body">
-                      <h5 className="card-title mb-1">{v.nome}</h5>
+                  <div className="card h-100 d-flex flex-column shadow-sm">
+                    <div className="card-body flex-grow-1">
+                      <h5 className="card-title mb-2">{v.nome}</h5>
 
-                      <ul className="list-unstyled mb-0 small mt-2">
+                      <ul className="list-unstyled mb-0 small">
                         <li>
                           <strong>Aplicação:</strong> {aplicacao}
                         </li>
@@ -150,6 +180,26 @@ export class VaccinePage extends BasePage {
                         )}
                       </ul>
                     </div>
+
+                    {/* Rodapé com botões no fim do card */}
+                    <div className="card-footer bg-transparent border-0 pt-0 d-flex justify-content-end gap-2">
+                      <button
+                        className="btn btn-outline-secondary btn-sm"
+                        title="Editar"
+                        onClick={() =>
+                          this.setState({ selected: v, showEditModal: true })
+                        }
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="btn btn-outline-danger btn-sm"
+                        title="Excluir"
+                        onClick={() => this.handleDelete(v)}
+                      >
+                        Excluir
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -157,6 +207,7 @@ export class VaccinePage extends BasePage {
           </div>
         )}
 
+        {/* Modal de criação */}
         <VaccineCreateModal
           show={showModal}
           petId={this.props.petId}
@@ -164,6 +215,29 @@ export class VaccinePage extends BasePage {
           onSaved={() => {
             this.setState(
               { showModal: false, successMsg: "Vacina cadastrada com sucesso" },
+              () => {
+                this.fetchVaccines();
+                setTimeout(() => this.setState({ successMsg: "" }), 3000);
+              }
+            );
+          }}
+        />
+
+        {/* Modal de edição */}
+        <VaccineEditModal
+          show={showEditModal}
+          petId={this.props.petId}
+          vaccine={selected}
+          onClose={() =>
+            this.setState({ showEditModal: false, selected: null })
+          }
+          onSaved={() => {
+            this.setState(
+              {
+                showEditModal: false,
+                selected: null,
+                successMsg: "Vacina atualizada com sucesso",
+              },
               () => {
                 this.fetchVaccines();
                 setTimeout(() => this.setState({ successMsg: "" }), 3000);
